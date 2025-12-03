@@ -3,7 +3,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
-local Ryusai = {}
+local Borealis = {}
 local UIConfig = { Keybind = Enum.KeyCode.RightControl }
 
 -- Animation Config
@@ -15,14 +15,14 @@ local TweenInfo_Line = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDire
 local Theme = {
     Background = Color3.fromRGB(24, 24, 24),
     Glow = Color3.fromRGB(0, 0, 0),
-    Accent = Color3.fromRGB(255, 140, 20),
+    Accent = Color3.fromRGB(60, 180, 255), -- Changed to Light Blue
     LightContrast = Color3.fromRGB(30, 30, 30),
     DarkContrast = Color3.fromRGB(20, 20, 20),
     TextColor = Color3.fromRGB(255, 255, 255)
 }
 
-if game.CoreGui:FindFirstChild("RyusaiUI") then
-    game.CoreGui.RyusaiUI:Destroy()
+if game.CoreGui:FindFirstChild("BorealisUI") then
+    game.CoreGui.BorealisUI:Destroy()
 end
 
 local function Create(class, properties)
@@ -64,11 +64,11 @@ local function AddRipple(Button)
     end)
 end
 
-function Ryusai.new(title)
+function Borealis.new(title)
     local Library = {}
     
     local ScreenGui = Create("ScreenGui", {
-        Name = "RyusaiUI",
+        Name = "BorealisUI",
         Parent = CoreGui,
         ResetOnSpawn = false
     })
@@ -675,4 +675,4 @@ function Ryusai.new(title)
     return Library
 end
 
-return Ryusai
+return Borealis
