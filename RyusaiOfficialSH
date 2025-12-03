@@ -186,12 +186,14 @@ function Borealis.new(title)
         Size = UDim2.new(0, 130, 1, -40)
     })
     
+    -- // EDITED: Added ScrollingEnabled = false //
     local TabContainer = Create("ScrollingFrame", {
         Parent = Sidebar,
         BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 1, -10),
         Position = UDim2.new(0, 0, 0, 10),
-        ScrollBarThickness = 0
+        ScrollBarThickness = 0,
+        ScrollingEnabled = false -- THIS DISABLES THE SLIDING
     })
     
     local TabLayout = Create("UIListLayout", {
@@ -317,8 +319,8 @@ function Borealis.new(title)
                if child:IsA("TextLabel") or child:IsA("TextButton") then
                    TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
                elseif child:IsA("Frame") and child.Name ~= "Shadow" then
-                    TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = (child == SlideTrack and 1 or (child.Name == "ToggleBox" and 0 or Theme.LightContrast == child.BackgroundColor3 and 0 or 0))}):Play()
-                    child.Visible = true
+                   TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = (child == SlideTrack and 1 or (child.Name == "ToggleBox" and 0 or Theme.LightContrast == child.BackgroundColor3 and 0 or 0))}):Play()
+                   child.Visible = true
                end
                if child:IsA("GuiObject") and child:FindFirstChild("UICorner") then
                    TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
