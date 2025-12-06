@@ -15,11 +15,10 @@ local TweenInfo_Click = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDir
 local TweenInfo_Tab = TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 local TweenInfo_Line = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
--- 1. Expose Theme to the Table
 local Theme = {
 	Background = Color3.fromRGB(24, 24, 24),
 	Glow = Color3.fromRGB(0, 0, 0),
-	Accent = Color3.fromRGB(60, 180, 255), -- The Blue
+	Accent = Color3.fromRGB(60, 180, 255),
 	LightContrast = Color3.fromRGB(30, 30, 30),
 	DarkContrast = Color3.fromRGB(20, 20, 20),
 	TextColor = Color3.fromRGB(255, 255, 255)
@@ -70,14 +69,12 @@ end
 
 function Borealis.new(title)
 	local Library = {}
-	Library.Theme = Theme
-	Library.ThemeUpdates = {} -- Store functions to update UI elements
+	Library.ThemeUpdates = {}
 
-	-- Function to update all blue elements
-	function Library:UpdateAccent(NewColor)
+	function Library:UpdateTheme(NewColor)
 		Theme.Accent = NewColor
-		for _, UpdateFunc in pairs(Library.ThemeUpdates) do
-			pcall(UpdateFunc)
+		for _, func in pairs(Library.ThemeUpdates) do
+			pcall(func, NewColor)
 		end
 	end
 
@@ -148,6 +145,17 @@ function Borealis.new(title)
 			BackgroundTransparency = 1
 		})
 		closeTween:Play()
+
+		for _, v in pairs(Main:GetDescendants()) do
+			if v:IsA("GuiObject") then
+				TweenService:Create(v, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+			end
+			if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+				TweenService:Create(v, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+			end
+		end
+
+		closeTween.Completed:Wait()
 		ScreenGui:Destroy()
 	end
 
@@ -265,11 +273,7 @@ function Borealis.new(title)
 			Size = UDim2.new(0, 3, 0, 0),
 			Visible = true
 		})
-		
-		-- Register Tab Indicator for Theme Updates
-		table.insert(Library.ThemeUpdates, function()
-			Indicator.BackgroundColor3 = Theme.Accent
-		end)
+		table.insert(Library.ThemeUpdates, function(color) Indicator.BackgroundColor3 = color end)
 
 		local Page = Create("ScrollingFrame", {
 			Name = name .. "Page",
@@ -281,11 +285,7 @@ function Borealis.new(title)
 			Visible = false,
 			CanvasSize = UDim2.new(0, 0, 0, 0) 
 		})
-		
-		-- Register Scrollbar for Theme Updates
-		table.insert(Library.ThemeUpdates, function()
-			Page.ScrollBarImageColor3 = Theme.Accent
-		end)
+		table.insert(Library.ThemeUpdates, function(color) Page.ScrollBarImageColor3 = color end)
 
 		Create("UIPadding", {
 			Parent = Page,
@@ -312,7 +312,19 @@ function Borealis.new(title)
 				if t.Page.Visible then
 					TweenService:Create(t.Btn, TweenInfo_Hover, {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
 					TweenService:Create(t.Ind, TweenInfo_Line, {Size = UDim2.new(0, 3, 0, 0)}):Play()
-					t.Page.Visible = false
+
+					task.spawn(function()
+						local oldPage = t.Page
+						for _, child in pairs(oldPage:GetDescendants()) do
+							if child:IsA("GuiObject") then
+								TweenService:Create(child, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+							end
+							if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+								TweenService:Create(child, TweenInfo.new(0.2), {TextTransparency = 1}):Play()
+							end
+						end
+						oldPage.Visible = false
+					end)
 				end
 			end
 
@@ -320,7 +332,31 @@ function Borealis.new(title)
 			Page.Visible = true
 
 			TweenService:Create(Indicator, TweenInfo_Line, {Size = UDim2.new(0, 3, 1, 0)}):Play()
+
+			Page.Position = UDim2.new(0, 0, 0, 15)
+			for _, child in pairs(Page:GetChildren()) do
+				if child:IsA("GuiObject") then child.BackgroundTransparency = 1 end
+				if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then child.TextTransparency = 1 end
+			end
+
+			TweenService:Create(Page, TweenInfo_Tab, {Position = UDim2.new(0,0,0,0)}):Play()
 			TweenService:Create(TabBtn, TweenInfo_Hover, {TextColor3 = Theme.TextColor}):Play()
+
+			for _, child in pairs(Page:GetDescendants()) do
+				if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+					TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+				elseif child:IsA("Frame") and child.Name ~= "Shadow" then
+					local targetTransparency = 0
+					if child.Name == "Ripple" then targetTransparency = 1 end
+					if child.BackgroundColor3 == Theme.LightContrast or child.BackgroundColor3 == Theme.DarkContrast or child.BackgroundColor3 == Theme.Accent then
+						TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = targetTransparency}):Play()
+					end
+					child.Visible = true
+				end
+				if child:IsA("GuiObject") and child:FindFirstChild("UICorner") then
+					TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+				end
+			end
 		end)
 
 		if First then
@@ -335,7 +371,7 @@ function Borealis.new(title)
 
 		local Section = {}
 		function Section:AddSection() return Section end
-
+		
 		function Section:AddLabel(text)
 			local LabelBox = Create("Frame", {
 				Parent = Page,
@@ -356,7 +392,7 @@ function Borealis.new(title)
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
 		end
-
+		
 		function Section:AddTextbox(props)
 			local TextboxFrame = Create("Frame", {
 				Parent = Page,
@@ -390,21 +426,12 @@ function Borealis.new(title)
 				ClearTextOnFocus = false
 			})
 			Create("UICorner", {Parent = InputBox, CornerRadius = UDim.new(0, 4)})
-	
-			InputBox.Focused:Connect(function()
-				TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Theme.Accent}):Play()
-			end)
-			InputBox.FocusLost:Connect(function(enterPressed)
+			InputBox.Focused:Connect(function() TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Theme.Accent}):Play() end)
+			InputBox.FocusLost:Connect(function()
 				TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
 				if props.Callback then props.Callback(InputBox.Text) end
 			end)
-			
-			-- Register Textbox Highlight for Theme Updates
-			table.insert(Library.ThemeUpdates, function()
-				if InputBox:IsFocused() then
-					InputBox.TextColor3 = Theme.Accent
-				end
-			end)
+			table.insert(Library.ThemeUpdates, function(color) if InputBox:IsFocused() then InputBox.TextColor3 = color end end)
 		end
 
 		function Section:AddToggle(props)
@@ -415,6 +442,7 @@ function Borealis.new(title)
 				Size = UDim2.new(1, 0, 0, 36)
 			})
 			Create("UICorner", {Parent = ToggleBox, CornerRadius = UDim.new(0, 4)})
+
 			Create("TextLabel", {
 				Parent = ToggleBox,
 				BackgroundTransparency = 1,
@@ -426,6 +454,7 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
+
 			local Checkbox = Create("TextButton", {
 				Parent = ToggleBox,
 				BackgroundColor3 = Theme.DarkContrast,
@@ -436,6 +465,7 @@ function Borealis.new(title)
 				AutoButtonColor = false
 			})
 			Create("UICorner", {Parent = Checkbox, CornerRadius = UDim.new(0, 4)})
+
 			AddRipple(Checkbox)
 
 			local State = props.Default or false
@@ -443,11 +473,7 @@ function Borealis.new(title)
 				TweenService:Create(Checkbox, TweenInfo_Hover, {BackgroundColor3 = State and Theme.Accent or Theme.DarkContrast}):Play()
 			end
 			Update()
-			
-			-- Register Toggle for Theme Updates
-			table.insert(Library.ThemeUpdates, function()
-				Update()
-			end)
+			table.insert(Library.ThemeUpdates, function(color) if State then TweenService:Create(Checkbox, TweenInfo_Hover, {BackgroundColor3 = color}):Play() end end)
 
 			Checkbox.MouseButton1Click:Connect(function()
 				State = not State
@@ -469,13 +495,16 @@ function Borealis.new(title)
 				AutoButtonColor = false
 			})
 			Create("UICorner", {Parent = Button, CornerRadius = UDim.new(0, 4)})
+
 			AddRipple(Button)
+
 			Button.MouseEnter:Connect(function()
 				TweenService:Create(Button, TweenInfo_Hover, {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
 			end)
 			Button.MouseLeave:Connect(function()
 				TweenService:Create(Button, TweenInfo_Hover, {BackgroundColor3 = Theme.LightContrast}):Play()
 			end)
+
 			Button.MouseButton1Click:Connect(function()
 				if props.Callback then props.Callback() end
 			end)
@@ -489,6 +518,7 @@ function Borealis.new(title)
 				Size = UDim2.new(1, 0, 0, 50)
 			})
 			Create("UICorner", {Parent = SliderBox, CornerRadius = UDim.new(0, 4)})
+
 			Create("TextLabel", {
 				Parent = SliderBox,
 				BackgroundTransparency = 1,
@@ -500,6 +530,7 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
+
 			local ValueText = Create("TextLabel", {
 				Parent = SliderBox,
 				BackgroundTransparency = 1,
@@ -511,6 +542,7 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Right
 			})
+
 			local SlideTrack = Create("TextButton", {
 				Parent = SliderBox,
 				BackgroundColor3 = Theme.DarkContrast,
@@ -521,6 +553,7 @@ function Borealis.new(title)
 				AutoButtonColor = false
 			})
 			Create("UICorner", {Parent = SlideTrack, CornerRadius = UDim.new(0, 2)})
+
 			local Fill = Create("Frame", {
 				Parent = SlideTrack,
 				BackgroundColor3 = Theme.Accent,
@@ -528,31 +561,35 @@ function Borealis.new(title)
 				Size = UDim2.new(0, 0, 1, 0)
 			})
 			Create("UICorner", {Parent = Fill, CornerRadius = UDim.new(0, 2)})
-			
-			-- Register Slider Fill for Theme Updates
-			table.insert(Library.ThemeUpdates, function()
-				Fill.BackgroundColor3 = Theme.Accent
-			end)
+			table.insert(Library.ThemeUpdates, function(color) Fill.BackgroundColor3 = color end)
 
 			local min, max, def = props.Min or 0, props.Max or 100, props.Default or 0
 			Fill.Size = UDim2.new((def - min)/(max - min), 0, 1, 0)
+
 			local Dragging = false
+
 			local function Update(input)
 				local pos = math.clamp((input.Position.X - SlideTrack.AbsolutePosition.X) / SlideTrack.AbsoluteSize.X, 0, 1)
 				local val = math.floor(min + (max - min) * pos)
+
 				TweenService:Create(Fill, TweenInfo.new(0.1), {Size = UDim2.new(pos, 0, 1, 0)}):Play()
 				ValueText.Text = tostring(val)
 				if props.Callback then props.Callback(val) end
 			end
+
 			SlideTrack.InputBegan:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					Dragging = true
 					Update(input)
 				end
 			end)
+
 			UserInputService.InputChanged:Connect(function(input)
-				if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then Update(input) end
+				if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+					Update(input)
+				end
 			end)
+
 			UserInputService.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = false end
 			end)
@@ -567,6 +604,7 @@ function Borealis.new(title)
 				ClipsDescendants = true
 			})
 			Create("UICorner", {Parent = Dropdown, CornerRadius = UDim.new(0, 4)})
+
 			local Text = Create("TextLabel", {
 				Parent = Dropdown,
 				BackgroundTransparency = 1,
@@ -578,8 +616,16 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
-			local OpenBtn = Create("TextButton", {Parent = Dropdown, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36), Text = "", ZIndex = 2})
+
+			local OpenBtn = Create("TextButton", {
+				Parent = Dropdown,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(1, 0, 0, 36),
+				Text = "",
+				ZIndex = 2
+			})
 			AddRipple(OpenBtn)
+
 			local Arrow = Create("TextLabel", {
 				Parent = Dropdown,
 				BackgroundTransparency = 1,
@@ -590,6 +636,7 @@ function Borealis.new(title)
 				TextColor3 = Color3.fromRGB(150, 150, 150),
 				TextSize = 12
 			})
+
 			local ItemHolder = Create("ScrollingFrame", {
 				Parent = Dropdown,
 				BackgroundTransparency = 1,
@@ -599,17 +646,20 @@ function Borealis.new(title)
 				ScrollBarThickness = 0,
 				ScrollBarImageColor3 = Theme.Accent
 			})
-			
-			-- Register Dropdown Scrollbar for Theme Updates
-			table.insert(Library.ThemeUpdates, function()
-				ItemHolder.ScrollBarImageColor3 = Theme.Accent
-			end)
+			table.insert(Library.ThemeUpdates, function(color) ItemHolder.ScrollBarImageColor3 = color end)
 
-			local ItemLayout = Create("UIListLayout", {Parent = ItemHolder, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4)})
+			local ItemLayout = Create("UIListLayout", {
+				Parent = ItemHolder,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 4) 
+			})
+
 			ItemLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 				ItemHolder.CanvasSize = UDim2.new(0,0,0, ItemLayout.AbsoluteContentSize.Y)
 			end)
+
 			local Open = false
+
 			OpenBtn.MouseButton1Click:Connect(function()
 				Open = not Open
 				if Open then
@@ -620,6 +670,7 @@ function Borealis.new(title)
 					TweenService:Create(Arrow, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Rotation = 0}):Play()
 				end
 			end)
+
 			for _, item in pairs(props.Items or {}) do
 				local ItemBtn = Create("TextButton", {
 					Parent = ItemHolder,
@@ -633,11 +684,14 @@ function Borealis.new(title)
 					AutoButtonColor = false
 				})
 				Create("UICorner", {Parent = ItemBtn, CornerRadius = UDim.new(0, 4)})
-				ItemBtn.MouseEnter:Connect(function() TweenService:Create(ItemBtn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Accent, TextColor3 = Color3.new(1,1,1)}):Play() end)
-				ItemBtn.MouseLeave:Connect(function() TweenService:Create(ItemBtn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.DarkContrast, TextColor3 = Color3.fromRGB(200,200,200)}):Play() end)
-				
-				-- Register Dropdown Items for Hover (Trickier, skipping to avoid lag, usually handled by mouseenter which grabs global theme anyway)
-				
+
+				ItemBtn.MouseEnter:Connect(function()
+					TweenService:Create(ItemBtn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Accent, TextColor3 = Color3.new(1,1,1)}):Play()
+				end)
+				ItemBtn.MouseLeave:Connect(function()
+					TweenService:Create(ItemBtn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.DarkContrast, TextColor3 = Color3.fromRGB(200,200,200)}):Play()
+				end)
+
 				ItemBtn.MouseButton1Click:Connect(function()
 					Open = false
 					Text.Text = props.Name .. ": " .. item
@@ -647,7 +701,7 @@ function Borealis.new(title)
 				end)
 			end
 		end
-
+		
 		function Section:AddColorPicker(props)
 			local ColorPickerToggled = false
 			local OldToggleColor = Color3.fromRGB(0, 0, 0)
@@ -659,6 +713,7 @@ function Borealis.new(title)
 			local ColorPickerInput = nil
 			local ColorInput = nil
 			local HueInput = nil
+			
 			local RainbowColorValue = 0
 			local HueSelectionPosition = 0
 
@@ -670,6 +725,7 @@ function Borealis.new(title)
 				ClipsDescendants = true
 			})
 			Create("UICorner", {Parent = Box, CornerRadius = UDim.new(0, 4)})
+
 			local Text = Create("TextLabel", {
 				Parent = Box,
 				BackgroundTransparency = 1,
@@ -681,6 +737,7 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
+
 			local CurrentColorFrame = Create("Frame", {
 				Parent = Box,
 				BackgroundColor3 = props.Default or Theme.Accent,
@@ -689,22 +746,32 @@ function Borealis.new(title)
 				Size = UDim2.new(0, 35, 0, 20)
 			})
 			Create("UICorner", {Parent = CurrentColorFrame, CornerRadius = UDim.new(0, 4)})
-			local TriggerBtn = Create("TextButton", {Parent = Box, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36), Text = ""})
+			
+			local TriggerBtn = Create("TextButton", {
+				Parent = Box,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(1, 0, 0, 36),
+				Text = ""
+			})
 			AddRipple(TriggerBtn)
+
 			local PickerContainer = Create("Frame", {
 				Parent = Box,
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0, 10, 0, 40),
 				Size = UDim2.new(1, -20, 0, 110)
 			})
+			
 			local ColorSquare = Create("ImageLabel", {
 				Parent = PickerContainer,
 				BackgroundColor3 = Color3.fromRGB(255, 0, 4),
 				BorderSizePixel = 0,
 				Size = UDim2.new(1, -40, 1, 0),
-				Image = "rbxassetid://4155801252"
+				Image = "rbxassetid://4155801252",
+				Active = true
 			})
 			Create("UICorner", {Parent = ColorSquare, CornerRadius = UDim.new(0, 4)})
+			
 			local ColorSelection = Create("ImageLabel", {
 				Parent = ColorSquare,
 				BackgroundTransparency = 1,
@@ -713,14 +780,17 @@ function Borealis.new(title)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.new(0,0,0,0)
 			})
+
 			local HueStrip = Create("ImageLabel", {
 				Parent = PickerContainer,
 				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 				BorderSizePixel = 0,
 				Position = UDim2.new(1, -25, 0, 0),
-				Size = UDim2.new(0, 25, 0, 100)
+				Size = UDim2.new(0, 25, 0, 100),
+				Active = true
 			})
 			Create("UICorner", {Parent = HueStrip, CornerRadius = UDim.new(0, 4)})
+			
 			local HueGradient = Create("UIGradient", {
 				Parent = HueStrip,
 				Rotation = 270,
@@ -734,6 +804,7 @@ function Borealis.new(title)
 					ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 4))
 				}
 			})
+			
 			local HueSelection = Create("ImageLabel", {
 				Parent = HueStrip,
 				BackgroundTransparency = 1,
@@ -742,6 +813,7 @@ function Borealis.new(title)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.new(0.5, 0, 0, 0)
 			})
+			
 			local RainbowToggleBtn = Create("TextButton", {
 				Parent = PickerContainer,
 				BackgroundColor3 = Theme.DarkContrast,
@@ -759,6 +831,7 @@ function Borealis.new(title)
 				CurrentColorFrame.BackgroundColor3 = Color3.fromHSV(ColorH, ColorS, ColorV)
 				ColorSquare.BackgroundColor3 = Color3.fromHSV(ColorH, 1, 1)
 				if props.Callback then props.Callback(CurrentColorFrame.BackgroundColor3) end
+				Library:UpdateTheme(CurrentColorFrame.BackgroundColor3)
 			end
 
 			ColorH = 1 - (math.clamp(HueSelection.AbsolutePosition.Y - HueStrip.AbsolutePosition.Y, 0, HueStrip.AbsoluteSize.Y) / HueStrip.AbsoluteSize.Y)
@@ -778,9 +851,11 @@ function Borealis.new(title)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					if RainbowColorPicker then return end
 					if ColorInput then ColorInput:Disconnect() end
+					
 					ColorInput = RunService.RenderStepped:Connect(function()
 						local ColorX = (math.clamp(Mouse.X - ColorSquare.AbsolutePosition.X, 0, ColorSquare.AbsoluteSize.X) / ColorSquare.AbsoluteSize.X)
 						local ColorY = (math.clamp(Mouse.Y - ColorSquare.AbsolutePosition.Y, 0, ColorSquare.AbsoluteSize.Y) / ColorSquare.AbsoluteSize.Y)
+
 						ColorSelection.Position = UDim2.new(ColorX, 0, ColorY, 0)
 						ColorS = ColorX
 						ColorV = 1 - ColorY
@@ -788,15 +863,18 @@ function Borealis.new(title)
 					end)
 				end
 			end)
+
 			ColorSquare.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					if ColorInput then ColorInput:Disconnect() end
 				end
 			end)
+
 			HueStrip.InputBegan:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					if RainbowColorPicker then return end
 					if HueInput then HueInput:Disconnect() end
+
 					HueInput = RunService.RenderStepped:Connect(function()
 						local HueY = (math.clamp(Mouse.Y - HueStrip.AbsolutePosition.Y, 0, HueStrip.AbsoluteSize.Y) / HueStrip.AbsoluteSize.Y)
 						HueSelection.Position = UDim2.new(0.5, 0, HueY, 0)
@@ -805,42 +883,55 @@ function Borealis.new(title)
 					end)
 				end
 			end)
+
 			HueStrip.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					if HueInput then HueInput:Disconnect() end
 				end
 			end)
+
 			RainbowToggleBtn.MouseButton1Click:Connect(function()
 				RainbowColorPicker = not RainbowColorPicker
 				if ColorInput then ColorInput:Disconnect() end
 				if HueInput then HueInput:Disconnect() end
+
 				if RainbowColorPicker then
 					TweenService:Create(RainbowToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Accent, TextColor3 = Color3.new(1,1,1)}):Play()
+					
 					OldToggleColor = CurrentColorFrame.BackgroundColor3
 					OldColor = ColorSquare.BackgroundColor3
 					OldColorSelectionPosition = ColorSelection.Position
 					OldHueSelectionPosition = HueSelection.Position
+
 					while RainbowColorPicker do
 						RainbowColorValue = RainbowColorValue + 1/255
 						if RainbowColorValue >= 1 then RainbowColorValue = 0 end
 						HueSelectionPosition = HueSelectionPosition + 1
 						if HueSelectionPosition == 80 then HueSelectionPosition = 0 end
+						
 						CurrentColorFrame.BackgroundColor3 = Color3.fromHSV(RainbowColorValue, 1, 1)
 						ColorSquare.BackgroundColor3 = Color3.fromHSV(RainbowColorValue, 1, 1)
+						
 						ColorSelection.Position = UDim2.new(1, 0, 0, 0)
 						HueSelection.Position = UDim2.new(0.5, 0, 0, HueSelectionPosition)
+						
 						if props.Callback then props.Callback(CurrentColorFrame.BackgroundColor3) end
+						Library:UpdateTheme(CurrentColorFrame.BackgroundColor3)
 						RunService.RenderStepped:Wait()
 					end
 				else
 					TweenService:Create(RainbowToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.DarkContrast, TextColor3 = Color3.fromRGB(200,200,200)}):Play()
+					
 					CurrentColorFrame.BackgroundColor3 = OldToggleColor
 					ColorSquare.BackgroundColor3 = OldColor
 					ColorSelection.Position = OldColorSelectionPosition
 					HueSelection.Position = OldHueSelectionPosition
+					
 					if props.Callback then props.Callback(CurrentColorFrame.BackgroundColor3) end
+					Library:UpdateTheme(CurrentColorFrame.BackgroundColor3)
 				end
 			end)
+
 			TriggerBtn.MouseButton1Click:Connect(function()
 				ColorPickerToggled = not ColorPickerToggled
 				if ColorPickerToggled then
@@ -859,6 +950,7 @@ function Borealis.new(title)
 				Size = UDim2.new(1, 0, 0, 36)
 			})
 			Create("UICorner", {Parent = BindFrame, CornerRadius = UDim.new(0, 4)})
+
 			Create("TextLabel", {
 				Parent = BindFrame,
 				BackgroundTransparency = 1,
@@ -870,6 +962,7 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
+
 			local BindBtn = Create("TextButton", {
 				Parent = BindFrame,
 				BackgroundColor3 = Theme.DarkContrast,
@@ -884,13 +977,16 @@ function Borealis.new(title)
 			})
 			Create("UICorner", {Parent = BindBtn, CornerRadius = UDim.new(0, 4)})
 			AddRipple(BindBtn)
+
 			local currentKey = defaultKey
 			local listening = false
+
 			BindBtn.MouseButton1Click:Connect(function()
 				if listening then return end
 				listening = true
 				BindBtn.Text = "..."
 				TweenService:Create(BindBtn, TweenInfo.new(0.2), {TextColor3 = Theme.Accent}):Play()
+
 				local conn
 				conn = UserInputService.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -902,6 +998,7 @@ function Borealis.new(title)
 					end
 				end)
 			end)
+
 			UserInputService.InputBegan:Connect(function(input, gp)
 				if not gp and input.KeyCode == currentKey then
 					if onActivate then onActivate() end
