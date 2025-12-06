@@ -69,12 +69,12 @@ end
 
 function Borealis.new(title)
 	local Library = {}
-	Library.ThemeUpdates = {}
+	local ThemeObjects = {}
 
 	function Library:UpdateTheme(NewColor)
 		Theme.Accent = NewColor
-		for _, func in pairs(Library.ThemeUpdates) do
-			pcall(func, NewColor)
+		for _, UpdateFunc in pairs(ThemeObjects) do
+			UpdateFunc(NewColor)
 		end
 	end
 
@@ -273,7 +273,7 @@ function Borealis.new(title)
 			Size = UDim2.new(0, 3, 0, 0),
 			Visible = true
 		})
-		table.insert(Library.ThemeUpdates, function(color) Indicator.BackgroundColor3 = color end)
+		table.insert(ThemeObjects, function(c) Indicator.BackgroundColor3 = c end)
 
 		local Page = Create("ScrollingFrame", {
 			Name = name .. "Page",
@@ -285,7 +285,7 @@ function Borealis.new(title)
 			Visible = false,
 			CanvasSize = UDim2.new(0, 0, 0, 0) 
 		})
-		table.insert(Library.ThemeUpdates, function(color) Page.ScrollBarImageColor3 = color end)
+		table.insert(ThemeObjects, function(c) Page.ScrollBarImageColor3 = c end)
 
 		Create("UIPadding", {
 			Parent = Page,
@@ -371,7 +371,7 @@ function Borealis.new(title)
 
 		local Section = {}
 		function Section:AddSection() return Section end
-		
+
 		function Section:AddLabel(text)
 			local LabelBox = Create("Frame", {
 				Parent = Page,
@@ -380,6 +380,7 @@ function Borealis.new(title)
 				Size = UDim2.new(1, 0, 0, 30)
 			})
 			Create("UICorner", {Parent = LabelBox, CornerRadius = UDim.new(0, 4)})
+
 			Create("TextLabel", {
 				Parent = LabelBox,
 				BackgroundTransparency = 1,
@@ -392,7 +393,7 @@ function Borealis.new(title)
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
 		end
-		
+
 		function Section:AddTextbox(props)
 			local TextboxFrame = Create("Frame", {
 				Parent = Page,
@@ -401,6 +402,7 @@ function Borealis.new(title)
 				Size = UDim2.new(1, 0, 0, 36)
 			})
 			Create("UICorner", {Parent = TextboxFrame, CornerRadius = UDim.new(0, 4)})
+	
 			Create("TextLabel", {
 				Parent = TextboxFrame,
 				BackgroundTransparency = 1,
@@ -412,6 +414,7 @@ function Borealis.new(title)
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left
 			})
+	
 			local InputBox = Create("TextBox", {
 				Parent = TextboxFrame,
 				BackgroundColor3 = Theme.DarkContrast,
@@ -426,12 +429,21 @@ function Borealis.new(title)
 				ClearTextOnFocus = false
 			})
 			Create("UICorner", {Parent = InputBox, CornerRadius = UDim.new(0, 4)})
-			InputBox.Focused:Connect(function() TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Theme.Accent}):Play() end)
-			InputBox.FocusLost:Connect(function()
-				TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
-				if props.Callback then props.Callback(InputBox.Text) end
+	
+			InputBox.Focused:Connect(function()
+				TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Theme.Accent}):Play()
 			end)
-			table.insert(Library.ThemeUpdates, function(color) if InputBox:IsFocused() then InputBox.TextColor3 = color end end)
+	
+			InputBox.FocusLost:Connect(function(enterPressed)
+				TweenService:Create(InputBox, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
+				if props.Callback then
+					props.Callback(InputBox.Text)
+				end
+				if props.ClearOnFocusLost then
+					InputBox.Text = ""
+				end
+			end)
+			table.insert(ThemeObjects, function(c) if InputBox:IsFocused() then InputBox.TextColor3 = c end end)
 		end
 
 		function Section:AddToggle(props)
@@ -473,7 +485,11 @@ function Borealis.new(title)
 				TweenService:Create(Checkbox, TweenInfo_Hover, {BackgroundColor3 = State and Theme.Accent or Theme.DarkContrast}):Play()
 			end
 			Update()
-			table.insert(Library.ThemeUpdates, function(color) if State then TweenService:Create(Checkbox, TweenInfo_Hover, {BackgroundColor3 = color}):Play() end end)
+			table.insert(ThemeObjects, function(c)
+				if State then
+					Checkbox.BackgroundColor3 = c
+				end
+			end)
 
 			Checkbox.MouseButton1Click:Connect(function()
 				State = not State
@@ -561,7 +577,7 @@ function Borealis.new(title)
 				Size = UDim2.new(0, 0, 1, 0)
 			})
 			Create("UICorner", {Parent = Fill, CornerRadius = UDim.new(0, 2)})
-			table.insert(Library.ThemeUpdates, function(color) Fill.BackgroundColor3 = color end)
+			table.insert(ThemeObjects, function(c) Fill.BackgroundColor3 = c end)
 
 			local min, max, def = props.Min or 0, props.Max or 100, props.Default or 0
 			Fill.Size = UDim2.new((def - min)/(max - min), 0, 1, 0)
@@ -646,7 +662,7 @@ function Borealis.new(title)
 				ScrollBarThickness = 0,
 				ScrollBarImageColor3 = Theme.Accent
 			})
-			table.insert(Library.ThemeUpdates, function(color) ItemHolder.ScrollBarImageColor3 = color end)
+			table.insert(ThemeObjects, function(c) ItemHolder.ScrollBarImageColor3 = c end)
 
 			local ItemLayout = Create("UIListLayout", {
 				Parent = ItemHolder,
@@ -701,7 +717,7 @@ function Borealis.new(title)
 				end)
 			end
 		end
-		
+
 		function Section:AddColorPicker(props)
 			local ColorPickerToggled = false
 			local OldToggleColor = Color3.fromRGB(0, 0, 0)
