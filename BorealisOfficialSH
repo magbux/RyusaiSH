@@ -6,7 +6,7 @@ local CoreGui = game:GetService("CoreGui")
 local Borealis = {}
 local UIConfig = { Keybind = Enum.KeyCode.RightControl }
 
--- Animation Config
+-- Animation Config dont mind my commentary im trying to keep track of things
 local TweenInfo_Hover = TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 local TweenInfo_Click = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local TweenInfo_Tab = TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
@@ -15,7 +15,7 @@ local TweenInfo_Line = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDire
 local Theme = {
     Background = Color3.fromRGB(24, 24, 24),
     Glow = Color3.fromRGB(0, 0, 0),
-    Accent = Color3.fromRGB(60, 180, 255), 
+    Accent = Color3.fromRGB(60, 180, 255), -- Changed to Light Blue
     LightContrast = Color3.fromRGB(30, 30, 30),
     DarkContrast = Color3.fromRGB(20, 20, 20),
     TextColor = Color3.fromRGB(255, 255, 255)
@@ -116,7 +116,7 @@ function Borealis.new(title)
         ZIndex = 2
     })
     
-    -- // UNLOAD FUNCTION //
+    -- // UNLOAD FUNCTION (ANIMATED Tried My Best!) //
     function Library:Unload()
         local closeTween = TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
@@ -186,13 +186,14 @@ function Borealis.new(title)
         Size = UDim2.new(0, 130, 1, -40)
     })
     
+    -- // EDITED: Added ScrollingEnabled = false //
     local TabContainer = Create("ScrollingFrame", {
         Parent = Sidebar,
         BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 1, -10),
         Position = UDim2.new(0, 0, 0, 10),
         ScrollBarThickness = 0,
-        ScrollingEnabled = false
+        ScrollingEnabled = false -- THIS DISABLES THE SLIDING
     })
     
     local TabLayout = Create("UIListLayout", {
@@ -233,13 +234,14 @@ function Borealis.new(title)
             AutoButtonColor = false
         })
         
+        -- // TAB LINE ANIMATION INDICATOR May Not Be Smooth //
         local Indicator = Create("Frame", {
             Parent = TabBtn,
             BackgroundColor3 = Theme.Accent,
             BorderSizePixel = 0,
             AnchorPoint = Vector2.new(0, 0.5),
             Position = UDim2.new(0, 0, 0.5, 0),
-            Size = UDim2.new(0, 3, 0, 0),
+            Size = UDim2.new(0, 3, 0, 0), -- Start Invisible
             Visible = true
         })
 
@@ -254,6 +256,7 @@ function Borealis.new(title)
             CanvasSize = UDim2.new(0, 0, 0, 0) 
         })
         
+        -- [!] THIS SECTION ADDS THE SPACE AROUND THE BUTTONS DONT TOUCH [!]
         Create("UIPadding", {
             Parent = Page,
             PaddingTop = UDim.new(0, 12),
@@ -262,10 +265,11 @@ function Borealis.new(title)
             PaddingBottom = UDim.new(0, 12)
         })
 
+        -- [!] THIS SECTION ADDS THE SPACE BETWEEN BUTTONS SAME THING [!]
         local PageLayout = Create("UIListLayout", {
             Parent = Page,
             SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 12)
+            Padding = UDim.new(0, 12) -- Gap between items
         })
         
         PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -278,6 +282,7 @@ function Borealis.new(title)
             for _, t in pairs(Tabs) do
                 if t.Page.Visible then
                     TweenService:Create(t.Btn, TweenInfo_Hover, {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+                    -- Shrink line out
                     TweenService:Create(t.Ind, TweenInfo_Line, {Size = UDim2.new(0, 3, 0, 0)}):Play()
                     
                     task.spawn(function()
@@ -298,6 +303,7 @@ function Borealis.new(title)
             CurrentTab = Page
             Page.Visible = true
             
+            -- Grow line in Why'd i Add These -- Comments
             TweenService:Create(Indicator, TweenInfo_Line, {Size = UDim2.new(0, 3, 1, 0)}):Play()
             
             Page.Position = UDim2.new(0, 0, 0, 15)
@@ -313,12 +319,7 @@ function Borealis.new(title)
                if child:IsA("TextLabel") or child:IsA("TextButton") then
                    TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
                elseif child:IsA("Frame") and child.Name ~= "Shadow" then
-                   -- Handle specific transparency for elements
-                   local targetTransparency = 0
-                   if child.Name == "SlideTrack" then targetTransparency = 1 end 
-                   if child.BackgroundColor3 == Theme.LightContrast then targetTransparency = 0 end
-                   
-                   TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = targetTransparency}):Play()
+                   TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = (child == SlideTrack and 1 or (child.Name == "ToggleBox" and 0 or Theme.LightContrast == child.BackgroundColor3 and 0 or 0))}):Play()
                    child.Visible = true
                end
                if child:IsA("GuiObject") and child:FindFirstChild("UICorner") then
@@ -345,7 +346,7 @@ function Borealis.new(title)
                 Parent = Page,
                 BackgroundColor3 = Theme.LightContrast,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 36)
+                Size = UDim2.new(1, 0, 0, 36) -- Width handled by UIPadding Dont Mind My Commentary
             })
             Create("UICorner", {Parent = ToggleBox, CornerRadius = UDim.new(0, 4)})
             
@@ -392,7 +393,7 @@ function Borealis.new(title)
                 Parent = Page,
                 BackgroundColor3 = Theme.LightContrast,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 36),
+                Size = UDim2.new(1, 0, 0, 36), -- Width handled by UIPaddinG
                 Font = Enum.Font.Gotham,
                 Text = props.Name,
                 TextColor3 = Theme.TextColor,
@@ -420,7 +421,7 @@ function Borealis.new(title)
                 Parent = Page,
                 BackgroundColor3 = Theme.LightContrast,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 50)
+                Size = UDim2.new(1, 0, 0, 50) -- Width handled by UIPadding
             })
             Create("UICorner", {Parent = SliderBox, CornerRadius = UDim.new(0, 4)})
             
@@ -449,7 +450,6 @@ function Borealis.new(title)
             })
             
             local SlideTrack = Create("TextButton", {
-                Name = "SlideTrack",
                 Parent = SliderBox,
                 BackgroundColor3 = Theme.DarkContrast,
                 BorderSizePixel = 0,
@@ -505,7 +505,7 @@ function Borealis.new(title)
                 Parent = Page,
                 BackgroundColor3 = Theme.LightContrast,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 36),
+                Size = UDim2.new(1, 0, 0, 36), -- Width handled by UIPadding
                 ClipsDescendants = true
             })
             Create("UICorner", {Parent = Dropdown, CornerRadius = UDim.new(0, 4)})
@@ -552,6 +552,7 @@ function Borealis.new(title)
                 ScrollBarImageColor3 = Theme.Accent
             })
             
+            -- PADDING FOR DROPDOWN LIST TOO
             local ItemLayout = Create("UIListLayout", {
                 Parent = ItemHolder,
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -606,214 +607,12 @@ function Borealis.new(title)
             end
         end
 
-        -- // NEW COLOR PICKER FUNCTION // --
-        function Section:AddColorPicker(props)
-            local ColorFrame = Create("Frame", {
-                Parent = Page,
-                BackgroundColor3 = Theme.LightContrast,
-                BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 36), -- Collapsed by default
-                ClipsDescendants = true
-            })
-            Create("UICorner", {Parent = ColorFrame, CornerRadius = UDim.new(0, 4)})
-            
-            Create("TextLabel", {
-                Parent = ColorFrame,
-                BackgroundTransparency = 1,
-                Position = UDim2.new(0, 10, 0, 0),
-                Size = UDim2.new(1, -60, 0, 36),
-                Font = Enum.Font.Gotham,
-                Text = props.Name,
-                TextColor3 = Theme.TextColor,
-                TextSize = 13,
-                TextXAlignment = Enum.TextXAlignment.Left
-            })
-            
-            local Preview = Create("TextButton", {
-                Parent = ColorFrame,
-                BackgroundColor3 = props.Default or Color3.new(1,1,1),
-                BorderSizePixel = 0,
-                Position = UDim2.new(1, -40, 0, 8),
-                Size = UDim2.new(0, 30, 0, 20),
-                Text = "",
-                AutoButtonColor = false
-            })
-            Create("UICorner", {Parent = Preview, CornerRadius = UDim.new(0, 4)})
-            AddRipple(Preview)
-            
-            -- Expansion Logic
-            local Open = false
-            
-            -- // Picker GUI Elements //
-            local PickerArea = Create("Frame", {
-                Parent = ColorFrame,
-                BackgroundTransparency = 1,
-                Position = UDim2.new(0, 10, 0, 40),
-                Size = UDim2.new(1, -20, 0, 100),
-                Visible = true
-            })
-            
-            -- HSV Square
-            local SV_Map = Create("ImageButton", {
-                Parent = PickerArea,
-                BackgroundColor3 = Color3.new(1,1,1),
-                BorderSizePixel = 0,
-                Position = UDim2.new(0, 0, 0, 0),
-                Size = UDim2.new(0, 100, 0, 100),
-                Image = "rbxassetid://4155801252", -- White gradient
-                AutoButtonColor = false
-            })
-            Create("UICorner", {Parent = SV_Map, CornerRadius = UDim.new(0, 4)})
-            
-            -- Overlay for Value (Black Gradient)
-            local Val_Overlay = Create("ImageLabel", {
-                Parent = SV_Map,
-                BackgroundTransparency = 1,
-                Size = UDim2.new(1,0,1,0),
-                Image = "rbxassetid://4155801252", -- Re-using gradient
-                ImageColor3 = Color3.new(0,0,0),
-                Rotation = 90
-            })
-            Create("UICorner", {Parent = Val_Overlay, CornerRadius = UDim.new(0, 4)})
-            
-            local SV_Cursor = Create("Frame", {
-                Parent = SV_Map,
-                BackgroundColor3 = Color3.new(1,1,1),
-                BorderSizePixel = 0,
-                Size = UDim2.new(0, 4, 0, 4),
-                AnchorPoint = Vector2.new(0.5, 0.5),
-                ZIndex = 2
-            })
-            Create("UICorner", {Parent = SV_Cursor, CornerRadius = UDim.new(1, 0)})
-            
-            -- Hue Slider
-            local Hue_Bar = Create("ImageButton", {
-                Parent = PickerArea,
-                BackgroundColor3 = Color3.new(1,1,1),
-                BorderSizePixel = 0,
-                Position = UDim2.new(0, 110, 0, 0),
-                Size = UDim2.new(1, -110, 0, 20),
-                AutoButtonColor = false
-            })
-            Create("UICorner", {Parent = Hue_Bar, CornerRadius = UDim.new(0, 4)})
-            
-            local UIGradient = Create("UIGradient", {
-                Parent = Hue_Bar,
-                Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
-                    ColorSequenceKeypoint.new(0.167, Color3.fromRGB(255,255,0)),
-                    ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0,255,0)),
-                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,255,255)),
-                    ColorSequenceKeypoint.new(0.667, Color3.fromRGB(0,0,255)),
-                    ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255,0,255)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,0))
-                }
-            })
-            
-            local Hue_Cursor = Create("Frame", {
-                Parent = Hue_Bar,
-                BackgroundColor3 = Color3.new(1,1,1),
-                BorderColor3 = Color3.new(0,0,0),
-                Size = UDim2.new(0, 2, 1, 0),
-                AnchorPoint = Vector2.new(0.5, 0),
-                ZIndex = 2
-            })
-            
-            -- RGB/Hex Text (Optional, keeping simple for now)
-            local InfoText = Create("TextLabel", {
-                Parent = PickerArea,
-                BackgroundTransparency = 1,
-                Position = UDim2.new(0, 110, 0, 30),
-                Size = UDim2.new(1, -110, 1, -30),
-                Font = Enum.Font.Gotham,
-                Text = "R: 255\nG: 255\nB: 255",
-                TextColor3 = Theme.TextColor,
-                TextSize = 12,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                TextYAlignment = Enum.TextYAlignment.Top
-            })
-            
-            -- Logic
-            local h, s, v = Color3.toHSV(props.Default or Color3.new(1,1,1))
-            
-            local function UpdateColor()
-                local color = Color3.fromHSV(h, s, v)
-                Preview.BackgroundColor3 = color
-                SV_Map.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
-                InfoText.Text = string.format("R: %d\nG: %d\nB: %d", math.floor(color.R * 255), math.floor(color.G * 255), math.floor(color.B * 255))
-                
-                if props.Callback then props.Callback(color) end
-            end
-            
-            local function UpdateSV(input)
-                local rX = (input.Position.X - SV_Map.AbsolutePosition.X) / SV_Map.AbsoluteSize.X
-                local rY = (input.Position.Y - SV_Map.AbsolutePosition.Y) / SV_Map.AbsoluteSize.Y
-                s = math.clamp(rX, 0, 1)
-                v = 1 - math.clamp(rY, 0, 1)
-                
-                SV_Cursor.Position = UDim2.new(s, 0, 1 - v, 0)
-                UpdateColor()
-            end
-            
-            local function UpdateHue(input)
-                local rX = (input.Position.X - Hue_Bar.AbsolutePosition.X) / Hue_Bar.AbsoluteSize.X
-                h = math.clamp(rX, 0, 1)
-                Hue_Cursor.Position = UDim2.new(h, 0, 0, 0)
-                UpdateColor()
-            end
-            
-            -- Set Initial Positions
-            SV_Cursor.Position = UDim2.new(s, 0, 1 - v, 0)
-            Hue_Cursor.Position = UDim2.new(h, 0, 0, 0)
-            UpdateColor()
-            
-            -- Input Handling
-            local DraggingSV, DraggingHue = false, false
-            
-            SV_Map.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    DraggingSV = true
-                    UpdateSV(input)
-                end
-            end)
-            
-            Hue_Bar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    DraggingHue = true
-                    UpdateHue(input)
-                end
-            end)
-            
-            UserInputService.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement then
-                    if DraggingSV then UpdateSV(input) end
-                    if DraggingHue then UpdateHue(input) end
-                end
-            end)
-            
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    DraggingSV = false
-                    DraggingHue = false
-                end
-            end)
-            
-            Preview.MouseButton1Click:Connect(function()
-                Open = not Open
-                if Open then
-                    TweenService:Create(ColorFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 150)}):Play()
-                else
-                    TweenService:Create(ColorFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 36)}):Play()
-                end
-            end)
-        end
-
         function Section:AddKeybind(name, defaultKey, onActivate)
             local BindFrame = Create("Frame", {
                 Parent = Page,
                 BackgroundColor3 = Theme.LightContrast,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 36)
+                Size = UDim2.new(1, 0, 0, 36) -- Width handled by UIPadding
             })
             Create("UICorner", {Parent = BindFrame, CornerRadius = UDim.new(0, 4)})
 
@@ -877,46 +676,5 @@ function Borealis.new(title)
     
     return Library
 end
-
--- // EXAMPLE USAGE //
-local Window = Borealis.new("Borealis UI")
-local MainTab = Window:MakeTab("Main")
-local MainSection = MainTab:AddSection()
-
-MainSection:AddToggle({
-    Name = "Enabled",
-    Default = true,
-    Callback = function(Value)
-        print("Toggle:", Value)
-    end
-})
-
--- The new Color Picker
-MainSection:AddColorPicker({
-    Name = "Accent Color",
-    Default = Color3.fromRGB(60, 180, 255),
-    Callback = function(Value)
-        print("Color Changed:", Value)
-    end
-})
-
-MainSection:AddSlider({
-    Name = "Speed",
-    Min = 16,
-    Max = 200,
-    Default = 16,
-    Callback = function(Value)
-        print("Slider:", Value)
-    end
-})
-
-MainSection:AddDropdown({
-    Name = "Teleports",
-    Default = "Spawn",
-    Items = {"Spawn", "Bank", "Store"},
-    Callback = function(Item)
-        print("Dropdown:", Item)
-    end
-})
 
 return Borealis
